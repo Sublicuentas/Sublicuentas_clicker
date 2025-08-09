@@ -1,0 +1,170 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sublicuentas Clicker</title>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0d1b2a;
+        color: white;
+        overflow: hidden;
+    }
+    #hud {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+        font-size: 18px;
+        font-weight: bold;
+    }
+    #startScreen {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.9);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        text-align: center;
+        font-size: 20px;
+    }
+    .btn {
+        background: #1dd1a1;
+        padding: 10px 20px;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+    canvas {
+        display: block;
+    }
+</style>
+</head>
+<body>
+
+<div id="hud">
+    ⏳ Tiempo: <span id="time">30</span>s | ⭐ Puntos: <span id="score">0</span> | ❤️ Vidas: <span id="lives">3</span>
+</div>
+
+<div id="startScreen">
+    🎯 <b>Objetivo:</b> Toque solo los <b>círculos</b> con nombres de plataformas para sumar puntos.<br>
+    ❌ <b>Evite tocar otra figura</b> (cuadrado, rectángulo, triángulo o punto): restan 10 pts y 1 vida.<br>
+    ⏳ <b>Duración:</b> 30 segundos.<br><br>
+    Seleccione nivel de dificultad:<br>
+    <div class="btn" onclick="startGame('principiante')">Principiante (5 pts)</div>
+    <div class="btn" onclick="startGame('intermedio')">Intermedio (10 pts)</div>
+    <div class="btn" onclick="startGame('avanzado')">Avanzado (15 pts)</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let figuras = [];
+let score = 0;
+let lives = 3;
+let timeLeft = 30;
+let gameInterval;
+let spawnInterval;
+let levelSettings = {puntos: 5, velocidad: 2};
+let plataformas = ["Netflix","Disney+","HBO Max","Prime","Crunchyroll"];
+
+function startGame(level) {
+    document.getElementById('startScreen').style.display = 'none';
+    score = 0; lives = 3; timeLeft = 30; figuras = [];
+    if (level === 'principiante') levelSettings = {puntos: 5, velocidad: 3};
+    if (level === 'intermedio') levelSettings = {puntos: 10, velocidad: 4};
+    if (level === 'avanzado') levelSettings = {puntos: 15, velocidad: 5};
+    gameInterval = setInterval(updateGame, 1000/60);
+    spawnInterval = setInterval(spawnFigura, 600);
+    setInterval(() => { timeLeft--; if (timeLeft <= 0) endGame(); }, 1000);
+}
+
+function spawnFigura() {
+    let tipos = ["circulo","cuadrado","rectangulo","triangulo","punto"];
+    let tipo = tipos[Math.floor(Math.random() * tipos.length)];
+    let texto = tipo === "circulo" ? plataformas[Math.floor(Math.random()*plataformas.length)] : "X";
+    figuras.push({
+        tipo: tipo,
+        x: Math.random() * (canvas.width - 100) + 50,
+        y: -50,
+        size: 60,
+        texto: texto,
+        color: tipo === "circulo" ? "lime" : "red"
+    });
+}
+
+function updateGame() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    figuras.forEach((fig, i) => {
+        fig.y += levelSettings.velocidad;
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        if (fig.tipo === "circulo") ctx.arc(fig.x, fig.y, fig.size, 0, Math.PI*2);
+        if (fig.tipo === "cuadrado") ctx.rect(fig.x-fig.size, fig.y-fig.size, fig.size*2, fig.size*2);
+        if (fig.tipo === "rectangulo") ctx.rect(fig.x-fig.size, fig.y-fig.size/2, fig.size*2, fig.size);
+        if (fig.tipo === "triangulo") {
+            ctx.moveTo(fig.x, fig.y-fig.size);
+            ctx.lineTo(fig.x-fig.size, fig.y+fig.size);
+            ctx.lineTo(fig.x+fig.size, fig.y+fig.size);
+            ctx.closePath();
+        }
+        if (fig.tipo === "punto") ctx.arc(fig.x, fig.y, 10, 0, Math.PI*2);
+        ctx.strokeStyle = fig.color;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.fillStyle = fig.color;
+        ctx.font = "bold 20px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(fig.texto, fig.x, fig.y);
+    });
+}
+
+canvas.addEventListener('click', e => {
+    figuras.forEach((fig, i) => {
+        let dx = e.clientX - fig.x;
+        let dy = e.clientY - fig.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if ((fig.tipo === "circulo" && dist < fig.size) ||
+            (fig.tipo === "punto" && dist < 10) ||
+            (["cuadrado","rectangulo"].includes(fig.tipo) &&
+             e.clientX > fig.x-fig.size && e.clientX < fig.x+fig.size &&
+             e.clientY > fig.y-fig.size && e.clientY < fig.y+fig.size) ||
+            (fig.tipo === "triangulo" && dist < fig.size)) {
+                if (fig.tipo === "circulo") {
+                    score += levelSettings.puntos;
+                } else {
+                    score -= 10;
+                    lives--;
+                }
+                figuras.splice(i,1);
+                document.getElementById('score').innerText = score;
+                document.getElementById('lives').innerText = lives;
+                if (lives <= 0) endGame();
+        }
+    });
+});
+
+function endGame() {
+    clearInterval(gameInterval);
+    clearInterval(spawnInterval);
+    alert("Juego terminado. Puntos: " + score);
+    location.reload();
+}
+
+</script>
+
+</body>
+</html>
