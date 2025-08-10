@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>Subli Gaming</title>
+<style>
+  :root{ --bg:#0b1223; --panel:#101a33; --text:#e5e7eb; --brand:#ff2d55; --brand2:#5dd0ff; }
+  html,body{margin:0;height:100%;background:radial-gradient(1200px 800px at 20% 0%, #10224a, var(--bg));font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;color:var(--text);}
+  #ui{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none}
+  .card{pointer-events:auto;background:rgb(16 26 51 / 70%);backdrop-filter: blur(10px);border:1px solid rgb(255 255 255 / 10%);padding:24px;border-radius:20px;box-shadow:0 10px 40px rgb(0 0 0 / 50%);max-width:760px}
+  h1{margin:10px 0 8px;font-size:40px;letter-spacing:.5px;font-weight:900;background:linear-gradient(90deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow: 0 6px 22px rgba(93,208,255,.25)}
+  .subtitle{opacity:.9;margin-top:-2px;margin-bottom:10px}
+  .levels{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border:1px solid rgb(255 255 255 / 18%);padding:12px 18px;border-radius:14px;cursor:pointer;font-weight:800;background:linear-gradient(135deg,#0e1a33,#0a1428);color:var(--text);box-shadow:0 6px 16px rgb(0 0 0 / 30%);transition:.2s transform,.2s box-shadow}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgb(0 0 0 / 40%)}
+  .btn.primary{border-color:transparent;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#07101e}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  #hud{position:fixed;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;font-weight:800;text-shadow:0 2px 6px rgba(0,0,0,.6)}
+  #hud .pill{background:rgb(255 255 255 / 12%);padding:8px 12px;border-radius:999px;border:1px solid rgb(255 255 255 / 18%)}
+  canvas{display:block;width:100vw;height:100vh;touch-action:none}
+  .hint{font-size:14px;opacity:.95;line-height:1.5}
+  .logo{width:min(260px,60vw);height:auto;filter: drop-shadow(0 8px 24px rgba(0,0,0,.55));}
+  #splash{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(800px 600px at 50% 30%, #141e38, #0b1223);z-index:9999}
+  .s-inner{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .s-logo{width:min(260px,60vw);height:auto;animation:pop 900ms ease-out forwards;filter: drop-shadow(0 14px 38px rgba(0,0,0,.5));}
+  .s-title{font-weight:900;font-size:32px;background:linear-gradient(90deg,var(--brand),var(--brand2));-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:.6px;opacity:0;animation:fade 1s .2s forwards}
+  .spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:#5dd0ff;animation:spin 900ms linear infinite}
+  @keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}
+  @keyframes fade{to{opacity:1}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .hide{animation:fadeOut .5s forwards}
+  @keyframes fadeOut{to{opacity:0;visibility:hidden}}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- Splash / Preloader con tu logo -->
+<div id="splash">
+  <div class="s-inner">
+    <img src="logo.png" alt="Subli Gaming" class="s-logo">
+    <div class="s-title">Subli Gaming</div>
+    <div class="spinner" aria-label="Cargando"></div>
+  </div>
+</div>
+
+<!-- HUD -->
+<div id="hud" style="display:none">
+  <div class="pill">⏱️ <span id="time">30.0</span>s</div>
+  <div class="pill">⭐ Puntos: <span id="score">0</span></div>
+  <div class="pill">💥 Combo: <span id="combo">x1</span></div>
+  <div class="pill">❤️ <span id="lives">3</span></div>
+  <div class="pill">🎯 <span id="levelname">-</span></div>
+</div>
+
+<!-- UI -->
+<div id="ui">
+  <div id="start" class="card" style="display:none">
+    <div style="display:grid;place-items:center">
+      <!-- Logo centrado y sin texto blanco encima -->
+      <img src="logo.png" alt="Subli Gaming" class="logo">
+      <h1>Subli Gaming</h1>
+      <div class="subtitle">Toque solo los <b>círculos</b>. Evite cuadrado, rectángulo y triángulo.</div>
+    </div>
+    <ul class="hint">
+      <li><b>+5</b> / <b>+10</b> / <b>+15</b> puntos por círculo según nivel.</li>
+      <li><b>-10 puntos</b> y <b>-1 vida</b> por figura incorrecta.</li>
+      <li>Duración: <b>30 segundos</b>.</li>
+    </ul>
+    <div class="levels">
+      <button class="btn primary" data-level="beginner">Principiante (+5)</button>
+      <button class="btn" data-level="intermediate">Intermedio (+10)</button>
+      <button class="btn" data-level="advanced">Avanzado (+15)</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="how">¿Cómo reclamo premio?</button>
+      <button class="btn" id="toggleFS">Pantalla completa</button>
+      <!-- Botón Probar sonido eliminado -->
+    </div>
+  </div>
+  <div id="howcard" class="card" style="display:none">
+    <h1>🎁 ¿Cómo ganar/regalar?</h1>
+    <ol style="padding-left:18px;line-height:1.5">
+      <li>Juegue y obtenga su <b>puntaje</b>.</li>
+      <li>Toque <b>Reclamar por WhatsApp</b> al finalizar.</li>
+      <li>Envíe su puntaje y captura.</li>
+    </ol>
+    <div class="row"><button class="btn primary" id="backToStart">Volver</button></div>
+  </div>
+  <div id="gameover" class="card" style="display:none"></div>
+</div>
+
+<!-- Audio de inicio (se reproduce al elegir nivel, no hay botón de prueba) -->
+<audio id="startSfx" preload="auto">
+  <source src="start.mp3" type="audio/mpeg">
+  <source src="start.ogg" type="audio/ogg">
+</audio>
+
+<script>
+// ===== Utils
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rand=(min,max)=>Math.random()*(max-min)+min;
+
+// ===== Canvas
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+function resize(){ canvas.width=innerWidth*2; canvas.height=innerHeight*2; }
+addEventListener('resize',resize); resize();
+
+// ===== Show start after splash
+window.addEventListener('load', ()=>{
+  setTimeout(()=>{
+    document.getElementById('splash').classList.add('hide');
+    setTimeout(()=>{ document.getElementById('start').style.display='block'; }, 450);
+  }, 1000);
+});
+
+// ===== Difficulty (added speed multipliers + spawn tuning)
+const DIFFICULTY = {
+  beginner:    { name:'Principiante', points:5, time:30, speed:0.7, spawn:0.85 },  // más lento y menos spawns
+  intermediate:{ name:'Intermedio',   points:10, time:30, speed:1.0, spawn:1.0 },
+  advanced:    { name:'Avanzado',     points:15, time:30, speed:1.15, spawn:1.1 }
+};
+let currentDiff = DIFFICULTY.beginner;
+
+// ===== State
+let running=false, timeLeft=30, score=0, combo=1, lives=3;
+let lastTime=0, spawnTimer=0, targets=[]; 
+let shake=0, maxCombo=1;
+const PENALTY = 10; 
+const COLORS = ['#22c55e','#3b82f6','#a855f7','#ef4444','#f59e0b','#e11d48','#06b6d4','#10b981','#f97316','#84cc16','#38bdf8','#f43f5e'];
+
+// HUD
+const hud=({show})=>{
+  document.getElementById('hud').style.display=show?'flex':'none';
+  document.getElementById('score').textContent=score;
+  document.getElementById('time').textContent=timeLeft.toFixed(1);
+  document.getElementById('combo').textContent='x'+(Math.round(combo*10)/10);
+  document.getElementById('lives').textContent=lives;
+  document.getElementById('levelname').textContent=currentDiff.name;
+};
+
+// Content
+const PLATFORM_NAMES = ['NETFLIX','DEEZER','DISNEY+','CRUNCHYROLL','PRIME VIDEO','HBO MAX','VIX','PARAMOUNT+','FREE FIRE','CANVA','MAGIS','UMBRA'];
+const DECOY_NAMES = ['CUADRADO','RECTÁNGULO','TRIÁNGULO'];
+
+// Target
+class Target{
+  constructor(){
+    const pad=100;
+    this.r = rand(65,110);
+    this.x = rand(pad, canvas.width-pad);
+    this.y = rand(pad, canvas.height-pad);
+    this.life = 0.9;
+    this.hit=false;
+    if(Math.random()<0.5){ this.kind='circle'; }
+    else { this.kind = ['square','rect','triangle'][Math.floor(Math.random()*3)]; }
+    this.label = this.kind==='circle' ? PLATFORM_NAMES[Math.floor(Math.random()*PLATFORM_NAMES.length)] : DECOY_NAMES[['square','rect','triangle'].indexOf(this.kind)];
+    this.color = COLORS[Math.floor(Math.random()*COLORS.length)];
+    // velocidades base
+    this.vx = rand(-80,80); this.vy = rand(-80,80); this.spin = rand(-3,3);
+    // aplicar multiplicador por dificultad
+    const m = currentDiff.speed || 1;
+    this.vx *= m; this.vy *= m; this.spin *= m;
+    this.rotation = rand(0,Math.PI*2);
+  }
+  update(dt){
+    this.life -= dt;
+    this.x += this.vx*dt; this.y += this.vy*dt; this.rotation += this.spin*dt*0.45;
+    if(this.x < 100 || this.x > canvas.width-100) this.vx *= -1;
+    if(this.y < 100 || this.y > canvas.height-100) this.vy *= -1;
+  }
+  draw(){
+    const {x,y,r,kind} = this;
+    ctx.save();
+    ctx.translate(x,y); ctx.rotate(this.rotation);
+
+    const g=ctx.createRadialGradient(0,0,0,0,0,r*1.4);
+    g.addColorStop(0, this.color + 'aa');
+    g.addColorStop(1, 'transparent');
+    ctx.globalAlpha=0.35; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r*1.4,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+
+    ctx.fillStyle = this.color;
+    ctx.strokeStyle='rgba(255,255,255,.95)';
+    ctx.lineWidth=8;
+
+    let maxTextW;
+    if(kind==='circle'){
+      ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0,0,r-8,0,Math.PI*2); ctx.stroke();
+      maxTextW = r*1.55;
+    } else if(kind==='square'){
+      const s=r*1.5;
+      ctx.beginPath(); ctx.rect(-s/2,-s/2,s,s); ctx.fill();
+      ctx.strokeRect(-s/2+8,-s/2+8,s-16,s-16);
+      maxTextW = s*0.82;
+    } else if(kind==='rect'){
+      const w=r*2.2, h=r*1.2;
+      ctx.beginPath(); ctx.rect(-w/2,-h/2,w,h); ctx.fill();
+      ctx.strokeRect(-w/2+8,-h/2+8,w-16,h-16);
+      maxTextW = w*0.82;
+    } else if(kind==='triangle'){
+      const s=r*2.0;
+      ctx.beginPath();
+      ctx.moveTo(0,-s/2);
+      ctx.lineTo(s/2,s/2);
+      ctx.lineTo(-s/2,s/2);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0,-s/2+8);
+      ctx.lineTo(s/2-8,s/2-8);
+      ctx.lineTo(-s/2+8,s/2-8);
+      ctx.closePath(); ctx.stroke();
+      maxTextW = s*0.82;
+    }
+
+    // Texto grande horizontal
+    ctx.save();
+    ctx.rotate(-this.rotation);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    let fontSize = (kind==='circle') ? r*0.95 : r*0.85;
+    if(kind==='rect' || kind==='triangle') fontSize = r*0.78;
+    ctx.font = `900 ${fontSize}px system-ui,Segoe UI,Roboto`;
+    const label = this.label;
+    let w = ctx.measureText(label).width; let guard=0;
+    while(w > maxTextW && guard < 20){
+      fontSize *= 0.9;
+      ctx.font = `900 ${fontSize}px system-ui,Segoe UI,Roboto`;
+      w = ctx.measureText(label).width; guard++;
+    }
+    ctx.lineWidth = Math.max(8, fontSize*0.14);
+    ctx.strokeStyle = 'rgba(0,0,0,.85)';
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeText(label, 0, 4);
+    ctx.fillText(label, 0, 4);
+    ctx.restore();
+
+    ctx.restore();
+  }
+  contains(px,py){
+    const dx = px - this.x; const dy = py - this.y;
+    if(this.kind==='circle'){
+      return (dx*dx+dy*dy) <= (this.r*this.r);
+    } else if(this.kind==='square'){
+      const s=this.r*1.5;
+      return (dx >= -s/2 && dx <= s/2 && dy >= -s/2 && dy <= s/2);
+    } else if(this.kind==='rect'){
+      const w=this.r*2.2, h=this.r*1.2;
+      return (dx >= -w/2 && dx <= w/2 && dy >= -h/2 && dy <= h/2);
+    } else if(this.kind==='triangle'){
+      const s=this.r*2.0;
+      return (dx >= -s/2 && dx <= s/2 && dy >= -s/2 && dy <= s/2);
+    }
+  }
+}
+
+// ===== UI
+document.getElementById('how').onclick=()=>{document.getElementById('start').style.display='none'; document.getElementById('howcard').style.display='block'};
+document.getElementById('backToStart').onclick=()=>{document.getElementById('howcard').style.display='none'; document.getElementById('start').style.display='block'};
+
+document.getElementById('toggleFS').onclick=()=>{
+  if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(()=>{}); }
+  else{ document.exitFullscreen(); }
+};
+
+document.querySelectorAll('[data-level]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const lv = btn.getAttribute('data-level');
+    currentDiff = DIFFICULTY[lv];
+    const a=document.getElementById('startSfx'); if(a){ a.currentTime=0; a.play().catch(()=>{}); }
+    if(!document.fullscreenElement){ document.documentElement.requestFullscreen().catch(()=>{}); }
+    startGame();
+  });
+});
+
+function startGame(){
+  running=true; timeLeft=currentDiff.time; score=0; combo=1; lives=3; targets=[]; spawnTimer=0; lastTime=performance.now(); maxCombo=1;
+  document.getElementById('start').style.display='none'; document.getElementById('howcard').style.display='none'; document.getElementById('gameover').style.display='none';
+  hud({show:true});
+  requestAnimationFrame(loop);
+}
+
+function endGame(){
+  running=false; hud({show:false});
+  let badge='🐣'; if(score>=21 && score<=50) badge='⚡'; else if(score>=51 && score<=100) badge='🔥'; else if(score>=101) badge='👑';
+  const body = `${badge} Subli Gaming\nPuntaje: ${score}\nQuiero reclamar mi premio`;
+  const encoded = encodeURIComponent(body);
+  const claimNumber = '50422554675';
+  const shareUrl = `https://wa.me/${claimNumber}?text=${encoded}`;
+  const genericShare = `https://wa.me/?text=${encoded}&type=custom_url`;
+
+  const over = document.getElementById('gameover');
+  over.innerHTML = `
+    <h1>🏁 ¡Fin de la partida!</h1>
+    <p style="margin:.2rem 0 .6rem"><b>Nivel:</b> ${currentDiff.name}</p>
+    <p style="margin:.2rem 0 1rem">Puntaje total: <b>${score}</b></p>
+    <div class="row" style="margin-bottom:10px">
+      <button class="btn primary" id="again">Elegir nivel</button>
+      <button class="btn" id="claim">Reclamar por WhatsApp</button>
+    </div>
+    <div class="row">
+      <button class="btn" id="share">Compartir puntaje</button>
+    </div>
+  `;
+  document.getElementById('again').onclick=()=>{document.getElementById('start').style.display='block'; over.style.display='none';};
+  document.getElementById('claim').onclick=()=>{window.open(shareUrl,'_blank')};
+  document.getElementById('share').onclick=()=>{
+    if(navigator.share){
+      navigator.share({title:'Subli Gaming', text: body, url: location.href}).catch(()=>window.open(genericShare,'_blank'))
+    } else { window.open(genericShare,'_blank'); }
+  };
+  over.style.display='block';
+}
+
+// ===== Loop
+let baseSpawnMin=0.55, baseSpawnMax=0.16; // se interpola hacia más rápido con el tiempo
+function loop(now){
+  if(!running) return;
+  const dt = Math.min(0.033,(now-lastTime)/1000); lastTime=now;
+  timeLeft -= dt; if(timeLeft<=0 || lives<=0){ endGame(); return; }
+
+  // Spawns ajustados por dificultad (Principiante un poco menos frecuente)
+  spawnTimer -= dt; if(spawnTimer<=0){
+    targets.push(new Target());
+    if(Math.random()<0.35) targets.push(new Target());
+    const rateBase = lerp(baseSpawnMin, baseSpawnMax, 1 - (timeLeft/currentDiff.time));
+    const rate = rateBase * (currentDiff.spawn ? (1/currentDiff.spawn) : 1);
+    spawnTimer = rate;
+  }
+
+  for(let i=targets.length-1;i>=0;i--){
+    const t=targets[i]; t.update(dt);
+    if(t.life<=0){ if(t.kind==='circle'){ lives-=1; combo=1; shake=8; } targets.splice(i,1); }
+  }
+
+  ctx.save();
+  const s=shake; shake=Math.max(0,shake-60*dt);
+  ctx.translate((Math.random()*2-1)*s, (Math.random()*2-1)*s);
+  ctx.clearRect(-10,-10,canvas.width+20,canvas.height+20);
+  const grd=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+  grd.addColorStop(0,'#0b2b5c'); grd.addColorStop(1,'#061a35'); ctx.fillStyle=grd; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.globalAlpha=0.08; for(let i=0;i<40;i++){ ctx.fillStyle=i%2?'#60a5fa':'#ff2d55'; ctx.beginPath(); ctx.arc((i*97)%canvas.width,(i*173)%canvas.height,(i%7+2)*8,0,Math.PI*2); ctx.fill(); }
+  ctx.globalAlpha=1;
+  targets.forEach(t=>t.draw());
+  ctx.restore();
+
+  hud({show:true});
+  requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
