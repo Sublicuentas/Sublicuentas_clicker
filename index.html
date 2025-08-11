@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subli Gaming</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #0f172a;
+        color: white;
+        text-align: center;
+    }
+    .logo {
+        width: 200px;
+        margin-top: 20px;
+    }
+    h1 {
+        font-size: 2em;
+        background: linear-gradient(90deg, #ff416c, #6a11cb);
+        -webkit-background-clip: text;
+        color: transparent;
+    }
+    .banner {
+        margin: 10px auto;
+        display: block;
+        width: 300px;
+    }
+    .btn-play {
+        background: linear-gradient(90deg, #ff416c, #6a11cb);
+        color: white;
+        padding: 15px 30px;
+        border-radius: 10px;
+        font-size: 1.2em;
+        font-weight: bold;
+        cursor: pointer;
+        border: none;
+        margin-top: 20px;
+    }
+    .btn-play:active {
+        transform: scale(0.95);
+    }
+    .hidden {
+        display: none;
+    }
+    .menu {
+        margin-top: 20px;
+    }
+    .nivel {
+        background: #1e293b;
+        padding: 10px;
+        margin: 10px auto;
+        border-radius: 10px;
+        width: 200px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<div id="pantalla-inicio">
+    <img src="logo.png" alt="Logo" class="logo">
+    <h1>Subli Gaming</h1>
+    <button class="btn-play" onclick="empezarJuego()">LET'S PLAY!</button>
+    <img src="banner1.png" class="banner" alt="Banner 1">
+    <img src="banner2.png" class="banner" alt="Banner 2">
+</div>
+
+<div id="menu-niveles" class="hidden">
+    <h2>Instrucciones</h2>
+    <p>Toque solo los círculos con nombres de plataformas para sumar puntos.<br>
+    Evite tocar otra figura: -10 pts y -1 vida.<br>
+    Power-ups: ⭐ Doble puntos (10s), ⏱️ Congela tiempo (5s), 🛡️ Protección de una vida.<br>
+    Duración: 30 segundos.</p>
+    <div class="menu">
+        <div class="nivel">Principiante</div>
+        <div class="nivel">Intermedio</div>
+        <div class="nivel">Avanzado</div>
+    </div>
+</div>
+
+<script>
+function empezarJuego() {
+    if (navigator.vibrate) {
+        navigator.vibrate(200);
+    }
+    let audio = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3');
+    audio.play();
+    document.getElementById('pantalla-inicio').classList.add('hidden');
+    document.getElementById('menu-niveles').classList.remove('hidden');
+}
+</script>
+
+</body>
+</html>
