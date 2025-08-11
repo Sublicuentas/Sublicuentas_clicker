@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Subli Gaming</title>
+<style>
+  :root{--bg:#0b1223;--panel:#101a33;--text:#e5e7eb;--brand:#ff2d55;--brand2:#5dd0ff}
+  html,body{margin:0;height:100%;background:radial-gradient(1200px 800px at 20% 0%,#10224a,var(--bg));font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",sans-serif;color:var(--text);overflow:hidden}
+  canvas{display:block;width:100vw;height:100vh;touch-action:none}
+
+  /* Intro */
+  #intro{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;background:radial-gradient(900px 700px at 50% 30%,#141e38,#0b1223);padding:12px}
+  .intro-wrap{width:min(960px,96vw);display:flex;flex-direction:column;align-items:center;gap:10px}
+  .intro-logo{width:min(240px,54vw);height:auto;filter:drop-shadow(0 12px 30px rgba(0,0,0,.55));margin-top:6px}
+  .intro-title{font-size:30px;font-weight:900;letter-spacing:.5px;margin-top:0;background:linear-gradient(90deg,#ff2d55,#5dd0ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 14px rgba(255,45,85,.45),0 0 18px rgba(93,208,255,.35)}
+  .cta{margin-top:4px;display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:16px;border:0;cursor:pointer;font-weight:900;color:#07101e;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 10px 24px rgba(0,0,0,.4);font-size:20px;animation:pulse 1.2s infinite ease-in-out}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  .banners{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .banners img{width:min(360px,92vw);aspect-ratio:3/1;object-fit:cover;border-radius:14px;border:1px solid rgb(255 255 255 / 14%);box-shadow:0 6px 16px rgba(0,0,0,.35)}
+  .fadeOut{animation:fadeOut .55s forwards}@keyframes fadeOut{to{opacity:0;visibility:hidden}}
+  
+  /* HUD */
+  #hud{position:fixed;top:8px;left:8px;right:8px;display:none;justify-content:space-between;align-items:center;font-weight:800;text-shadow:0 2px 6px rgba(0,0,0,.6);z-index:2}
+  #hud .pill{background:rgb(255 255 255 / 12%);padding:6px 10px;border-radius:999px;border:1px solid rgb(255 255 255 / 18%);display:flex;align-items:center;gap:8px;font-size:14px}
+
+  /* UI tarjetas */
+  #ui{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:3}
+  .card{pointer-events:auto;background:rgb(16 26 51 / 70%);backdrop-filter:blur(10px);border:1px solid rgb(255 255 255 / 10%);padding:16px;border-radius:18px;box-shadow:0 10px 40px rgb(0 0 0 / 50%);max-width:860px;margin:8px}
+  h1{margin:4px 0 8px;font-size:32px;font-weight:900;background:linear-gradient(90deg,#ff2d55,#5dd0ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 10px rgba(255,45,85,.45),0 0 18px rgba(93,208,255,.35)}
+  .hint{font-size:15px;opacity:.95;line-height:1.55;margin:0 0 6px}
+  .levels{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;border:1px solid rgb(255 255 255 / 18%);padding:12px 16px;border-radius:14px;cursor:pointer;font-weight:800;background:linear-gradient(135deg,#0e1a33,#0a1428);color:var(--text);box-shadow:0 6px 16px rgb(0 0 0 / 30%);transition:.2s transform,.2s box-shadow;font-size:15px}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgb(0 0 0 / 40%)}
+  .btn.primary{border-color:transparent;background:linear-gradient(135deg,#ff2d55,#5dd0ff);color:#07101e}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .logo{width:min(220px,54vw);height:auto;filter:drop-shadow(0 0 12px rgba(255,45,85,.55)) drop-shadow(0 10px 24px rgba(0,0,0,.6));margin:6px auto 2px}
+  .eff{padding:2px 6px;border-radius:999px;background:rgb(255 255 255 / 14%);border:1px solid rgb(255 255 255 / 18%);font-size:11px;display:none}
+
+  /* Game Over compacto */
+  #gameover{text-align:center}
+  #gameover h1{font-size:30px;margin-top:2px}
+  #gameover p{font-size:17px}
+  #gameover .final-banners{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:8px 0 6px}
+  #gameover .final-banners img{width:min(320px,88vw);aspect-ratio:3/1;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,.14)}
+</style>
+<script>
+// Cambia tu número una sola vez aquí:
+const WHATSAPP_NUMBER = "50422554675";
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- INTRO (logo + LET'S PLAY + banners 1 y 2) -->
+<section id="intro">
+  <div class="intro-wrap">
+    <img src="logo.png" class="intro-logo" alt="Sublicuentas">
+    <div class="intro-title">Subli Gaming</div>
+    <button id="letsPlay" class="cta">LET’S&nbsp;PLAY!</button>
+    <div class="banners">
+      <img src="banner1.png?v=5" alt="Banner 1" onerror="this.style.display='none'">
+      <img src="banner2.png?v=5" alt="Banner 2" onerror="this.style.display='none'">
+    </div>
+  </div>
+</section>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="pill">⏱️ <span id="time">30.0</span>s</div>
+  <div class="pill">⭐ Puntos: <span id="score">0</span></div>
+  <div class="pill">💥 Combo: <span id="combo">x1</span></div>
+  <div class="pill">❤️ <span id="lives">3</span></div>
+  <div class="pill">🎯 <span id="levelname">-</span></div>
+  <div class="pill" id="effects">
+    <span id="effDP" class="eff">⭐ x2</span>
+    <span id="effFreeze" class="eff">⏰ +5s</span>
+    <span id="effShield" class="eff">🛡 1</span>
+  </div>
+</div>
+
+<!-- UI (sin banners 1 y 2) -->
+<div id="ui">
+  <div id="start" class="card" style="display:none">
+    <div style="display:grid;place-items:center">
+      <img src="logo.png" alt="Subli Gaming" class="logo">
+      <h1>Subli Gaming</h1>
+      <ul class="hint">
+        <li><b>Toque solo los círculos</b> con nombres de plataformas para sumar puntos.</li>
+        <li><b>Evite tocar otra figura</b> (cuadrado, rectángulo, triángulo): <b>−10 pts</b> y <b>−1 vida</b>.</li>
+        <li><b>Power-ups:</b> ⭐ Doble puntos (10s), ⏰ Congela tiempo (5s), 🛡 Protección de una vida.</li>
+        <li><b>Duración:</b> <b>30 segundos</b>.</li>
+      </ul>
+    </div>
+    <div class="levels">
+      <button class="btn primary" data-level="beginner">Principiante (+5)</button>
+      <button class="btn" data-level="intermediate">Intermedio (+10)</button>
+      <button class="btn" data-level="advanced">Avanzado (+15)</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn" id="how">¿Cómo reclamo premio?</button>
+      <button class="btn" id="toggleFS">Pantalla completa</button>
+    </div>
+  </div>
+
+  <div id="howcard" class="card" style="display:none">
+    <h1>🎁 ¿Cómo reclamo premio?</h1>
+    <ol style="padding-left:18px;line-height:1.55">
+      <li>Juegue y obtenga su <b>puntaje</b>.</li>
+      <li>Al finalizar, toque <b>Reclamar por WhatsApp</b>.</li>
+      <li>Se abrirá un mensaje con su <b>puntaje</b> y “Quiero reclamar mi premio”. Envíelo.</li>
+    </ol>
+    <div class="row"><button class="btn primary" id="backToStart">Volver</button></div>
+  </div>
+
+  <div id="gameover" class="card" style="display:none"></div>
+</div>
+
+<script>
+/* ===== Utilidades y sonido ===== */
+const rand=(a,b)=>Math.random()*(b-a)+a;
+let audioCtx;
+function playClick(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(520,t);
+    o.frequency.exponentialRampToValueAtTime(880,t+0.08);
+    g.gain.setValueAtTime(0.001,t);
+    g.gain.exponentialRampToValueAtTime(0.2,t+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+    o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t+0.13);
+  }catch(e){}
+}
+
+/* ===== Navegación: Intro → Menú ===== */
+const intro=document.getElementById('intro');
+const startCard=document.getElementById('start');
+document.getElementById('letsPlay').addEventListener('click',()=>{
+  if(navigator.vibrate) navigator.vibrate([25,40,25]);
+  playClick();
+  intro.classList.add('fadeOut');
+  setTimeout(()=>{
+    intro.style.display='none';
+    startCard.style.display='block';
+    window.scrollTo(0,0);
+  },550);
+});
+document.getElementById('how').onclick=()=>{startCard.style.display='none';document.getElementById('howcard').style.display='block'};
+document.getElementById('backToStart').onclick=()=>{document.getElementById('howcard').style.display='none';startCard.style.display='block'};
+document.getElementById('toggleFS').onclick=()=>{if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(()=>{});}else{document.exitFullscreen();}};
+
+/* ===== Canvas ===== */
+const canvas=document.getElementById('game'), ctx=canvas.getContext('2d');
+function resize(){canvas.width=innerWidth*2;canvas.height=innerHeight*2}
+addEventListener('resize',resize);resize();
+
+/* ===== Dificultades ===== */
+const DIFFICULTY={
+  beginner:{name:'Principiante',points:5,time:30,speed:0.72,spawn:0.85},
+  intermediate:{name:'Intermedio',points:10,time:30,speed:1.0,spawn:1.0},
+  advanced:{name:'Avanzado',points:15,time:30,speed:1.18,spawn:1.1}
+};
+let currentDiff=DIFFICULTY.beginner;
+
+/* ===== Estado de juego ===== */
+let running=false,timeLeft=30,score=0,combo=1,lives=3;
+let lastTime=0,spawnTimer=0,targets=[],shake=0;
+const PENALTY=10;
+const COLORS=['#22c55e','#3b82f6','#a855f7','#ef4444','#f59e0b','#e11d48','#06b6d4','#10b981','#f97316','#84cc16','#38bdf8','#f43f5e'];
+let doublePointsTimer=0,timeFreezeTimer=0,shieldCharges=0;
+
+/* ===== HUD ===== */
+function updateHUD(show){
+  document.getElementById('hud').style.display=show?'flex':'none';
+  time.textContent=timeLeft.toFixed(1);
+  scoreEl.textContent=score;
+  comboEl.textContent='x'+(Math.round(combo*10)/10);
+  livesEl.textContent=lives;
+  levelname.textContent=currentDiff.name;
+  effDP.style.display=doublePointsTimer>0?'inline-block':'none';
+  effFreeze.style.display=timeFreezeTimer>0?'inline-block':'none';
+  effShield.style.display=shieldCharges>0?'inline-block':'none';
+}
+const time=document.getElementById('time'),scoreEl=document.getElementById('score'),
+      comboEl=document.getElementById('combo'),livesEl=document.getElementById('lives'),
+      levelname=document.getElementById('levelname'),
+      effDP=document.getElementById('effDP'),effFreeze=document.getElementById('effFreeze'),effShield=document.getElementById('effShield');
+
+/* ===== Datos ===== */
+const PLATFORM_NAMES=['NETFLIX','DEEZER','DISNEY+','CRUNCHYROLL','PRIME VIDEO','HBO MAX','VIX','PARAMOUNT+','FREE FIRE','CANVA','MAGIS','UMBRA'];
+const DECOY_NAMES=['CUADRADO','RECTÁNGULO','TRIÁNGULO'];
+
+/* ===== Objetivos ===== */
+class Target{
+  constructor(kind=null){
+    const pad=110;
+    this.r=rand(65,110);
+    this.x=rand(pad,canvas.width-pad);
+    this.y=rand(pad,canvas.height-pad);
+    this.life=0.9; this.hit=false;
+    this.kind = kind ? kind : (Math.random()<0.5?'circle':['square','rect','triangle'][Math.floor(Math.random()*3)]);
+    this.label = this.kind==='circle' ? PLATFORM_NAMES[Math.floor(Math.random()*PLATFORM_NAMES.length)]
+                                      : DECOY_NAMES[['square','rect','triangle'].indexOf(this.kind)];
+    this.color=COLORS[Math.floor(Math.random()*COLORS.length)];
+    const m=currentDiff.speed||1;
+    this.vx=rand(-80,80)*m; this.vy=rand(-80,80)*m; this.spin=rand(-3,3)*m; this.rotation=rand(0,Math.PI*2);
+  }
+  update(dt){
+    this.life-=dt; this.x+=this.vx*dt; this.y+=this.vy*dt; this.rotation+=this.spin*dt*0.45;
+    if(this.x<100||this.x>canvas.width-100) this.vx*=-1;
+    if(this.y<100||this.y>canvas.height-100) this.vy*=-1;
+  }
+  draw(){
+    const {x,y,r,kind}=this; ctx.save(); ctx.translate(x,y); ctx.rotate(this.rotation);
+    const glow=ctx.createRadialGradient(0,0,0,0,0,r*1.4); glow.addColorStop(0,this.color+'aa'); glow.addColorStop(1,'transparent');
+    ctx.globalAlpha=.35; ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,r*1.4,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle=this.color; ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=8;
+    let maxTextW;
+    if(kind==='circle'){ ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(0,0,r-8,0,Math.PI*2); ctx.stroke(); maxTextW=r*1.4; }
+    else if(kind==='square'){ const s=r*1.5; ctx.beginPath(); ctx.rect(-s/2,-s/2,s,s); ctx.fill(); ctx.strokeRect(-s/2+8,-s/2+8,s-16,s-16); maxTextW=s*0.78; }
+    else if(kind==='rect'){ const w=r*2.2,h=r*1.2; ctx.beginPath(); ctx.rect(-w/2,-h/2,w,h); ctx.fill(); ctx.strokeRect(-w/2+8,-h/2+8,w-16,h-16); maxTextW=w*0.78; }
+    else if(kind==='triangle'){ const s=r*2.0; ctx.beginPath(); ctx.moveTo(0,-s/2); ctx.lineTo(s/2,s/2); ctx.lineTo(-s/2,s/2); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0,-s/2+8); ctx.lineTo(s/2-8,s/2-8); ctx.lineTo(-s/2+8,s/2-8); ctx.closePath(); ctx.stroke(); maxTextW=s*0.74; }
+    // Texto auto-fit
+    ctx.save(); ctx.rotate(-this.rotation); ctx.textAlign='center'; ctx.textBaseline='middle';
+    let fontSize=(kind==='circle')?r*0.72:(kind==='rect'||kind==='triangle')?r*0.62:r*0.68;
+    ctx.font=`900 ${fontSize}px system-ui,Segoe UI,Roboto`; let w=ctx.measureText(this.label).width, guard=0;
+    while(w>maxTextW && guard<24){ fontSize*=0.92; ctx.font=`900 ${fontSize}px system-ui,Segoe UI,Roboto`; w=ctx.measureText(this.label).width; guard++; }
+    ctx.lineWidth=Math.max(6,fontSize*0.13); ctx.strokeStyle='rgba(0,0,0,.85)'; ctx.fillStyle='#fff';
+    ctx.strokeText(this.label,0,4); ctx.fillText(this.label,0,4);
+    ctx.restore(); ctx.restore();
+  }
+  contains(px,py){
+    const dx=px-this.x,dy=py-this.y;
+    if(this.kind==='circle'){return dx*dx+dy*dy<=this.r*this.r;}
+    if(this.kind==='square'){const s=this.r*1.5;return dx>=-s/2&&dx<=s/2&&dy>=-s/2&&dy<=s/2;}
+    if(this.kind==='rect'){const w=this.r*2.2,h=this.r*1.2;return dx>=-w/2&&dx<=w/2&&dy>=-h/2&&dy<=h/2;}
+    if(this.kind==='triangle'){const s=this.r*2.0;return dx>=-s/2&&dx<=s/2&&dy>=-s/2&&dy<=s/2;}
+    if(this.kind==='star'||this.kind==='clock'||this.kind==='shield'){return dx*dx+dy*dy<=this.r*this.r;}
+  }
+}
+
+/* PowerUps */
+class PowerUp extends Target{
+  constructor(type){ super('circle'); this.kind=type; this.life=1.2; this.r=rand(60,90); this.label='';
+    this.color= type==='star'?'#facc15':(type==='clock'?'#38bdf8':'#22c55e'); }
+  draw(){ const {x,y,r}=this; ctx.save(); ctx.translate(x,y); ctx.rotate(this.rotation);
+    const g=ctx.createRadialGradient(0,0,0,0,0,r*1.4); g.addColorStop(0,this.color+'aa'); g.addColorStop(1,'transparent');
+    ctx.globalAlpha=.5; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,r*1.4,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle=this.color; ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=8;
+    if(this.kind==='star'){ const spikes=5,outer=r*0.9,inner=r*0.4; let rot=Math.PI/2*3, step=Math.PI/spikes;
+      ctx.beginPath(); ctx.moveTo(0,-outer); for(let i=0;i<spikes;i++){ ctx.lineTo(Math.cos(rot)*outer,Math.sin(rot)*outer); rot+=step; ctx.lineTo(Math.cos(rot)*inner,Math.sin(rot)*inner); rot+=step; }
+      ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    else if(this.kind==='clock'){ ctx.beginPath(); ctx.arc(0,0,r*0.9,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=6;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-r*0.55); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r*0.45,0); ctx.stroke(); }
+    else if(this.kind==='shield'){ ctx.beginPath(); ctx.moveTo(0,-r*0.9); ctx.quadraticCurveTo(r*0.9,-r*0.4, r*0.6, r*0.5);
+      ctx.quadraticCurveTo(0,r*0.95,-r*0.6,r*0.5); ctx.quadraticCurveTo(-r*0.9,-r*0.4,0,-r*0.9); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.restore(); }
+}
+
+/* Juego */
+function startGame(){
+  running=true; document.body.style.overflow='hidden';
+  timeLeft=currentDiff.time; score=0; combo=1; lives=3;
+  targets=[]; spawnTimer=0; lastTime=performance.now(); doublePointsTimer=0; timeFreezeTimer=0; shieldCharges=0;
+  startCard.style.display='none'; document.getElementById('howcard').style.display='none'; document.getElementById('gameover').style.display='none';
+  updateHUD(true); requestAnimationFrame(loop);
+}
+function endGame(){
+  running=false; document.body.style.overflow='auto'; updateHUD(false);
+  let badge='🐣'; if(score>=21&&score<=50) badge='⚡'; else if(score>=51&&score<=100) badge='🔥'; else if(score>=101) badge='👑';
+  const body=`${badge} Subli Gaming\nPuntaje: ${score}\nQuiero reclamar mi premio`;
+  const shareUrl=`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(body)}`;
+  const over=document.getElementById('gameover');
+  over.innerHTML=`
+    <h1>🏁 ¡Fin de la partida!</h1>
+    <p><b>Nivel:</b> ${currentDiff.name}</p>
+    <p>Puntaje total: <b>${score}</b></p>
+    <div class="final-banners">
+      <img src="banner3.png?v=5" alt="Banner 3">
+      <img src="banner4.png?v=5" alt="Banner 4">
+    </div>
+    <div class="row" style="margin-top:6px">
+      <button class="btn primary" id="again">Elegir nivel</button>
+      <button class="btn" id="claim">Reclamar por WhatsApp</button>
+    </div>`;
+  document.getElementById('again').onclick=()=>{startCard.style.display='block'; over.style.display='none';};
+  document.getElementById('claim').onclick=()=>{window.open(shareUrl,'_blank')};
+  over.style.display='block';
+}
+
+/* Input */
+canvas.addEventListener('pointerdown',e=>{
+  if(!running) return;
+  const rect=canvas.getBoundingClientRect();
+  const x=(e.clientX-rect.left)*(canvas.width/rect.width);
+  const y=(e.clientY-rect.top)*(canvas.height/rect.height);
+  let hit=-1,best=Infinity;
+  for(let i=0;i<targets.length;i++){ if(targets[i].contains(x,y)){ const dx=x-targets[i].x,dy=y-targets[i].y,d=dx*dx+dy*dy; if(d<best){best=d;hit=i;} } }
+  if(hit>-1){
+    const t=targets[hit]; if(t.hit) return; t.hit=true; targets.splice(hit,1);
+    if(t.kind==='circle'){ let inc=currentDiff.points||0; if(doublePointsTimer>0) inc*=2; inc=Math.floor(inc*combo); score=Math.max(0,score+inc); combo=Math.min(10,combo+0.25); }
+    else if(t.kind==='star'){ doublePointsTimer=10; }
+    else if(t.kind==='clock'){ timeFreezeTimer=5; }
+    else if(t.kind==='shield'){ shieldCharges=1; }
+    else { score=Math.max(0,score-PENALTY); if(shieldCharges>0){shieldCharges=0;} else {lives=Math.max(0,lives-1);} combo=1; shake=12; }
+    updateHUD(true);
+  } else { combo=1; updateHUD(true); }
+});
+
+/* Bucle */
+function loop(now){
+  if(!running) return;
+  const dt=Math.min(0.033,(now-lastTime)/1000); lastTime=now;
+  if(timeFreezeTimer>0) timeFreezeTimer-=dt; else timeLeft-=dt;
+  if(doublePointsTimer>0) doublePointsTimer-=dt;
+  if(timeLeft<=0||lives<=0){ endGame(); return; }
+
+  spawnTimer-=dt;
+  if(spawnTimer<=0){
+    targets.push(new Target());
+    if(Math.random()<0.35) targets.push(new Target());
+    const r=Math.random();
+    if(r<0.06) targets.push(new PowerUp('star'));
+    else if(r<0.10) targets.push(new PowerUp('clock'));
+    else if(r<0.14) targets.push(new PowerUp('shield'));
+    const base=0.55, rate=base*(currentDiff.spawn?(1/currentDiff.spawn):1);
+    spawnTimer=rate;
+  }
+
+  for(let i=targets.length-1;i>=0;i--){
+    const t=targets[i]; t.update(dt);
+    if(t.life<=0){ if(t.kind==='circle'){lives=Math.max(0,lives-1); combo=1; shake=8;} targets.splice(i,1); }
+  }
+
+  ctx.save();
+  const s=shake; shake=Math.max(0,shake-60*dt); ctx.translate((Math.random()*2-1)*s,(Math.random()*2-1)*s);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const grd=ctx.createLinearGradient(0,0,canvas.width,canvas.height); grd.addColorStop(0,'#0b2b5c'); grd.addColorStop(1,'#061a35'); ctx.fillStyle=grd; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.globalAlpha=0.08; for(let i=0;i<40;i++){ ctx.fillStyle=i%2?'#60a5fa':'#ff2d55'; ctx.beginPath(); ctx.arc((i*97)%canvas.width,(i*173)%canvas.height,(i%7+2)*8,0,Math.PI*2); ctx.fill(); }
+  ctx.globalAlpha=1;
+  targets.forEach(t=>t.draw());
+  ctx.restore();
+
+  updateHUD(true);
+  requestAnimationFrame(loop);
+}
+
+/* Enlazar niveles */
+document.querySelectorAll('[data-level]').forEach(b=>b.addEventListener('click',()=>{ currentDiff=DIFFICULTY[b.dataset.level]; startGame(); }));
+</script>
+</body>
+</html>
